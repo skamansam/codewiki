@@ -2,20 +2,33 @@
 
 A pattern for building personal knowledge bases using LLMs, specifically designed for storing and retrieving programming methodologies, techniques, and best practices.
 
-This repository contains the initialization script and templates for creating a CodeWiki in your Obsidian vault via the REST API. The actual wiki data lives in your Obsidian vault, not in this repository.
+This repository contains a self-contained skill for LLM agents that enables storing and retrieving programming methodologies via the Obsidian REST API. The actual wiki data lives in your Obsidian vault, not in this repository.
 
 ## Quick Start
 
+### Option A: Install via npx skills (Recommended)
+
+```bash
+npx skills add skamansam/codewiki --skill codewiki
+```
+
+Then enable the skill in your LLM agent and start using it.
+
+### Option B: Manual Installation
+
 1. Install and configure the Obsidian Local REST API plugin
-2. Run the initialization script to create the wiki in your Obsidian vault via API
-3. Add the wiki integration to your project's AGENTS.md
-4. Start using it with your LLM agent
+2. Clone this repository
+3. Enable the CodeWiki skill in your LLM agent
+4. The agent will automatically initialize the wiki on first use
 
 ## Repository Structure
 
 ```
 codewiki/
 ├── README.md              # This file
+├── skills/
+│   └── codewiki/
+│       └── SKILL.md       # Self-contained skill definition for LLM agents
 ├── init_wiki.sh          # Script to initialize wiki via Obsidian API
 └── templates/             # Template files for wiki structure
     ├── index.md
@@ -25,175 +38,51 @@ codewiki/
     └── retrieve-methodologies.md
 ```
 
-The wiki itself (CodeWiki/, wiki/, schema/, raw/ directories) is created in your Obsidian vault when you run the initialization script.
+The wiki itself (CodeWiki/, wiki/, schema/, raw/ directories) is created in your Obsidian vault when the skill is first used.
 
-## Integration Guide
+## Using CodeWiki as a Skill
 
-All wiki files are created and managed via the Obsidian REST API or MCP - no manual file copying required.
+CodeWiki is designed as a self-contained skill that LLM agents can discover and use without any configuration in your project files.
 
-### Step 1: Install Obsidian Local REST API Plugin
+### How It Works
 
-1. Open Obsidian
-2. Go to Settings → Community Plugins → Browse
-3. Search for "Local REST API with MCP"
-4. Install and enable the plugin
-5. In plugin settings:
-   - Note your API key (shown in the settings)
-   - Note the server URL (default: `http://localhost:27124`)
-   - Choose between HTTPS (secure) or HTTP (insecure) mode
-   - If using HTTPS, you may need to trust the self-signed certificate
+When the CodeWiki skill is enabled in your LLM agent:
 
-### Step 2: Initialize Wiki via API
+1. **First Use**: The agent detects that CodeWiki is not initialized and prompts you for your Obsidian API key
+2. **Initialization**: The agent downloads and runs the initialization script to create the wiki structure in your Obsidian vault
+3. **Automatic Storage**: When you state programming preferences (e.g., "always use descriptive variable names"), the agent automatically stores them
+4. **Automatic Retrieval**: Before writing code, the agent automatically retrieves relevant methodologies
 
-Run the provided shell script to create the wiki structure in your Obsidian vault via the REST API. This ensures all wiki data is handled through the API from the start.
+### No Project Configuration Needed
 
-#### Prerequisites
+Unlike traditional integrations, CodeWiki doesn't require:
+- Adding anything to your AGENTS.md
+- Committing files to your repository
+- Manual setup in each project
 
-1. Ensure you have `curl` and `sed` installed (most systems have these by default)
+Simply enable the skill in your LLM agent and it works across all your projects.
+
+## Skill Definition
+
+See `skills/codewiki/SKILL.md` for the complete skill definition that LLM agents can discover and use.
+
+## Manual Initialization (Optional)
+
+While the skill can auto-initialize on first use, you can also manually initialize the wiki:
+
+### Prerequisites
+
+1. Install Obsidian Local REST API plugin
 2. Ensure Obsidian is running with your vault open
-3. Ensure the Local REST API plugin is installed and enabled
+3. Note your API key from plugin settings
 
-#### Run the Initialization Script
+### Run the Initialization Script
 
 ```bash
-./init_wiki.sh --api-key YOUR_API_KEY [--url http://localhost:27124] [--wiki-folder CodeWiki]
+curl -fsSL https://raw.githubusercontent.com/skamansam/codewiki/main/init_wiki.sh | bash -s -- --api-key YOUR_API_KEY
 ```
 
-**Parameters:**
-- `--api-key`: Your Obsidian API key (required) - get it from Settings → Local REST API with MCP
-- `--url`: Obsidian API base URL (default: `http://localhost:27124`)
-- `--wiki-folder`: Name of the wiki folder in your vault (default: `CodeWiki`)
-
-**Example:**
-```bash
-./init_wiki.sh --api-key "your-api-key-here" --wiki-folder "programming-wiki"
-```
-
-The script will:
-- Verify the connection to Obsidian
-- Process template files from the `templates/` directory
-- Replace variables (`{{WIKI_FOLDER}}`, `{{DATE}}`, `{{API_URL}}`) with actual values
-- Upload all files via the REST API to your vault
-- Create the wiki structure in your specified folder
-- Initialize `wiki/index.md` and `wiki/log.md`
-- Create `schema/AGENTS.md` with all conventions and API skills
-- Create the workflow files for storing and retrieving methodologies
-
-All files are created via the REST API, ensuring consistency with how the LLM agent will interact with the wiki.
-
-#### Template Files
-
-The script uses template files in the `templates/` directory:
-- `templates/index.md` - Template for wiki index
-- `templates/log.md` - Template for operation log
-- `templates/AGENTS.md` - Template for schema documentation
-- `templates/store-methodology.md` - Template for store workflow
-- `templates/retrieve-methodologies.md` - Template for retrieve workflow
-
-You can customize these templates before running the script if needed. The following variables are automatically replaced:
-- `{{WIKI_FOLDER}}` - Your configured wiki folder name
-- `{{DATE}}` - Current date in YYYY-MM-DD format
-- `{{API_URL}}` - Your configured API URL
-
-### Step 3: Add Wiki Integration to Your Project's AGENTS.md
-
-If your project already has an `AGENTS.md` file (or similar configuration file for your LLM agent), add the following section:
-
-```markdown
-## CodeWiki Integration
-
-This project uses CodeWiki for storing and retrieving programming methodologies.
-
-### Wiki Location
-- Wiki directory: `CodeWiki/` (or your chosen subfolder name from --wiki-folder) in your Obsidian vault
-- Schema file: `CodeWiki/schema/AGENTS.md` (in your vault, read via API)
-- Index file: `CodeWiki/wiki/index.md` (in your vault, read via API)
-
-### Obsidian REST API Configuration
-- API URL: `http://localhost:27124` (or your configured URL)
-- API Key: {your API key from Obsidian settings}
-- Content-Type: `text/markdown`
-
-### Required Skills
-
-The LLM agent must have the following capabilities:
-
-1. **HTTP Request Skill** - Ability to make HTTP requests to the Obsidian REST API
-   - GET requests to read files (including schema and workflow files from the vault)
-   - PUT/POST/PATCH requests to create/update files
-   - Header handling for authentication and content types
-
-2. **Markdown Processing Skill** - Ability to parse and generate markdown
-   - Parse YAML frontmatter
-   - Generate wiki links in Obsidian format `[[Page Title]]`
-   - Maintain consistent formatting
-
-### Workflow Instructions
-
-Before writing code or making technical decisions:
-1. Use the API to read `CodeWiki/schema/workflows/retrieve-methodologies.md` from your vault
-2. Follow the workflow to retrieve and apply relevant methodologies
-
-When the user states a programming preference:
-1. Use the API to read `CodeWiki/schema/workflows/store-methodology.md` from your vault
-2. Follow the workflow to store the methodology in the wiki
-
-### API Endpoints Reference
-
-Key endpoints (full documentation in `CodeWiki/schema/AGENTS.md`):
-
-- Read file: `GET /vault/{filename}`
-- Create/update file: `PUT /vault/{filename}`
-- Append to file: `POST /vault/{filename}`
-- Patch section: `PATCH /vault/{filename}` (with Operation, Target-Type, Target headers)
-- Open in Obsidian: `POST /open/{filename}`
-
-### Example API Usage
-
-```http
-# Read the index
-GET /vault/CodeWiki/wiki/index.md
-Headers:
-  Accept: text/markdown
-  Authorization: Bearer {API_KEY}
-
-# Create a methodology page
-PUT /vault/CodeWiki/wiki/methodologies/variable-naming.md
-Headers:
-  Content-Type: text/markdown
-  Authorization: Bearer {API_KEY}
-Body:
-  ---
-  title: Descriptive Variable Naming
-  type: methodology
-  tags: [naming, code-quality]
-  created: 2026-06-30
-  ---
-
-  # Descriptive Variable Naming
-
-  ## Principle
-  Always use descriptive variable names...
-```
-
-### MCP Server Alternative
-
-If your LLM agent supports MCP (Model Context Protocol):
-1. Use the MCP server exposed by the Obsidian plugin
-2. Connect via `POST /mcp/` endpoint
-3. Use MCP tools instead of direct HTTP requests
-4. This provides the same capabilities as structured tools
-```
-
-### Step 4: If Your Project Doesn't Have an AGENTS.md
-
-If your project doesn't have an AGENTS.md file, you can either:
-
-**Option A:** Create a new `AGENTS.md` in your project root with the content from Step 3
-
-**Option B:** Create a `.devin/AGENTS.md` or `.windsurf/AGENTS.md` (depending on your agent) with the content from Step 3
-
-**Option C:** Add the wiki instructions directly to your existing configuration file (e.g., `CLAUDE.md`, `INSTRUCTIONS.md`, etc.)
+This creates a `CodeWiki/` folder in your Obsidian vault with the wiki structure.
 
 ## Required LLM Agent Capabilities
 
