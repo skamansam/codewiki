@@ -17,8 +17,10 @@
 set -e
 
 # Default values
-API_URL="http://localhost:27124"
+API_URL="https://localhost:27124"
 WIKI_FOLDER="CodeWiki"
+INSECURE=false
+SKIP_SSL_VALIDATION=false
 DATE=$(date +%Y-%m-%d)
 TEMPLATES_DIR="$(dirname "$0")/templates"
 
@@ -37,14 +39,25 @@ while [[ $# -gt 0 ]]; do
             WIKI_FOLDER="$2"
             shift 2
             ;;
+        --insecure)
+            INSECURE=true
+            API_URL="http://localhost:27124"
+            shift
+            ;;
+        --skip-ssl-validation)
+            SKIP_SSL_VALIDATION=true
+            shift
+            ;;
         -h|--help)
-            echo "Usage: $0 --api-key YOUR_API_KEY [--url http://localhost:27124] [--wiki-folder llmwiki]"
+            echo "Usage: $0 --api-key YOUR_API_KEY [--url https://localhost:27124] [--wiki-folder CodeWiki] [--insecure] [--skip-ssl-validation]"
             echo ""
             echo "Options:"
-            echo "  --api-key      Obsidian Local REST API key (required)"
-            echo "  --url          Obsidian API base URL (default: http://localhost:27124)"
-            echo "  --wiki-folder  Wiki folder name in vault (default: llmwiki)"
-            echo "  -h, --help     Show this help message"
+            echo "  --api-key              Obsidian Local REST API key (required)"
+            echo "  --url                  Obsidian API base URL (default: https://localhost:27124)"
+            echo "  --wiki-folder          Wiki folder name in vault (default: CodeWiki)"
+            echo "  --insecure             Use HTTP instead of HTTPS (default: HTTPS)"
+            echo "  --skip-ssl-validation Skip SSL certificate validation (for self-signed certs)"
+            echo "  -h, --help             Show this help message"
             exit 0
             ;;
         *)
@@ -78,13 +91,43 @@ echo "------------------------------------------------"
 # Function to check API connection
 check_connection() {
     echo "Checking connection to Obsidian API..."
-    response=$(curl -s "$API_URL/")
-    
+    echo "  URL: $API_URL"
+    echo "  Insecure mode (HTTP): $INSECURE"
+    echo "  Skip SSL validation: $SKIP_SSL_VALIDATION"
+
+    if [ "$INSECURE" = true ] || [ "$SKIP_SSL_VALIDATION" = true ]; then
+        echo "  Using curl with -k flag (skip SSL validation)"
+        echo "  Verbose curl output:"
+        curl -v -k "$API_URL/" 2>&1
+        response=$(curl -s -k "$API_URL/")
+    else
+        echo "  Using curl without -k flag (secure)"
+        echo "  Verbose curl output:"
+        curl -v "$API_URL/" 2>&1
+        response=$(curl -s "$API_URL/")
+    fi
+
+    echo "  Raw response:"
+    echo "$response"
+    echo ""
+
+    if [ -z "$response" ]; then
+        echo "✗ Connection failed: Empty response"
+        echo "  Possible causes:"
+        echo "    - Obsidian is not running"
+        echo "    - Local REST API plugin is not enabled"
+        echo "    - Wrong protocol (try --insecure for HTTP mode)"
+        echo "    - Wrong port (default is 27124)"
+        echo "    - SSL certificate issue (try --skip-ssl-validation)"
+        return 1
+    fi
+
     if echo "$response" | grep -q '"authenticated":true'; then
         echo "✓ Connected to Obsidian API"
         return 0
     else
         echo "✗ Connection failed: Not authenticated"
+        echo "  Response did not contain 'authenticated':true"
         return 1
     fi
 }
@@ -93,23 +136,30 @@ check_connection() {
 process_and_upload() {
     local template_file="$1"
     local target_path="$2"
-    
+
     # Read template and replace variables
     content=$(cat "$template_file")
     content=$(echo "$content" | sed "s/{{WIKI_FOLDER}}/$WIKI_FOLDER/g")
     content=$(echo "$content" | sed "s/{{DATE}}/$DATE/g")
     content=$(echo "$content" | sed "s|{{API_URL}}|$API_URL|g")
-    
+
     # Upload via API
     url="$API_URL/vault/$target_path"
-    response=$(curl -s -w "\n%{http_code}" -X PUT "$url" \
-        -H "Authorization: Bearer $API_KEY" \
-        -H "Content-Type: text/markdown" \
-        -d "$content")
-    
+    if [ "$INSECURE" = true ] || [ "$SKIP_SSL_VALIDATION" = true ]; then
+        response=$(curl -s -k -w "\n%{http_code}" -X PUT "$url" \
+            -H "Authorization: Bearer $API_KEY" \
+            -H "Content-Type: text/markdown" \
+            -d "$content")
+    else
+        response=$(curl -s -w "\n%{http_code}" -X PUT "$url" \
+            -H "Authorization: Bearer $API_KEY" \
+            -H "Content-Type: text/markdown" \
+            -d "$content")
+    fi
+
     http_code=$(echo "$response" | tail -n1)
     body=$(echo "$response" | head -n-1)
-    
+
     if [ "$http_code" = "200" ] || [ "$http_code" = "204" ]; then
         echo "✓ Created: $target_path"
         return 0

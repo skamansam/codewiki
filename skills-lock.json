@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "codewiki": {
+      "source": "skamansam/codewiki",
+      "sourceType": "github",
+      "skillPath": "skills/codewiki/SKILL.md",
+      "computedHash": "cb69deda85e461420312ebf0ab820636ee9e9464ed99bc9123ffff6485408bda"
+    }
+  }
+}

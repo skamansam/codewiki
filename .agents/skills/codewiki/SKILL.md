@@ -46,14 +46,8 @@ Before writing code or making technical decisions:
 The first time CodeWiki is used, it needs to be initialized in the Obsidian vault:
 
 ```bash
-# Download and run the initialization script (HTTPS mode)
+# Download and run the initialization script
 curl -fsSL https://raw.githubusercontent.com/skamansam/codewiki/main/init_wiki.sh | bash -s -- --api-key YOUR_API_KEY
-
-# For HTTP mode
-curl -fsSL https://raw.githubusercontent.com/skamansam/codewiki/main/init_wiki.sh | bash -s -- --api-key YOUR_API_KEY --insecure
-
-# For HTTPS with self-signed certificate
-curl -fsSL https://raw.githubusercontent.com/skamansam/codewiki/main/init_wiki.sh | bash -s -- --api-key YOUR_API_KEY --skip-ssl-validation
 ```
 
 This creates a `CodeWiki/` folder in your Obsidian vault with:
@@ -64,13 +58,10 @@ This creates a `CodeWiki/` folder in your Obsidian vault with:
 
 ## API Configuration
 
-- **API URL**: `https://localhost:27124` (default)
+- **API URL**: `http://localhost:27124` (default)
 - **API Key**: Get from Obsidian plugin settings
 - **Content-Type**: `text/markdown`
 - **Wiki Folder**: `CodeWiki` (default)
-- **Options**:
-  - `--insecure` - Use HTTP instead of HTTPS
-  - `--skip-ssl-validation` - Skip SSL certificate validation (for self-signed certs)
 
 ## Required Agent Capabilities
 

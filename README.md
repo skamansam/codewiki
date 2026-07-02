@@ -82,6 +82,19 @@ While the skill can auto-initialize on first use, you can also manually initiali
 curl -fsSL https://raw.githubusercontent.com/skamansam/codewiki/main/init_wiki.sh | bash -s -- --api-key YOUR_API_KEY
 ```
 
+**Options:**
+- `--insecure` - Use HTTP instead of HTTPS (for HTTP mode)
+- `--skip-ssl-validation` - Skip SSL certificate validation (for self-signed certificates in HTTPS mode)
+
+**Examples:**
+```bash
+# For HTTP mode
+curl -fsSL https://raw.githubusercontent.com/skamansam/codewiki/main/init_wiki.sh | bash -s -- --api-key YOUR_API_KEY --insecure
+
+# For HTTPS with self-signed certificate
+curl -fsSL https://raw.githubusercontent.com/skamansam/codewiki/main/init_wiki.sh | bash -s -- --api-key YOUR_API_KEY --skip-ssl-validation
+```
+
 This creates a `CodeWiki/` folder in your Obsidian vault with the wiki structure.
 
 ## Required LLM Agent Capabilities
