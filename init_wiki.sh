@@ -98,13 +98,13 @@ check_connection() {
     if [ "$INSECURE" = true ] || [ "$SKIP_SSL_VALIDATION" = true ]; then
         echo "  Using curl with -k flag (skip SSL validation)"
         echo "  Verbose curl output:"
-        curl -v -k "$API_URL/" 2>&1
-        response=$(curl -s -k "$API_URL/")
+        curl -v -k "$API_URL/" -H "Authorization: Bearer $API_KEY" 2>&1
+        response=$(curl -s -k "$API_URL/" -H "Authorization: Bearer $API_KEY")
     else
         echo "  Using curl without -k flag (secure)"
         echo "  Verbose curl output:"
-        curl -v "$API_URL/" 2>&1
-        response=$(curl -s "$API_URL/")
+        curl -v "$API_URL/" -H "Authorization: Bearer $API_KEY" 2>&1
+        response=$(curl -s "$API_URL/" -H "Authorization: Bearer $API_KEY")
     fi
 
     echo "  Raw response:"
@@ -122,7 +122,7 @@ check_connection() {
         return 1
     fi
 
-    if echo "$response" | grep -q '"authenticated":true'; then
+    if echo "$response" | grep -q '"authenticated": true'; then
         echo "✓ Connected to Obsidian API"
         return 0
     else
